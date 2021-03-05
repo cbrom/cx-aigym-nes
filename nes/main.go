@@ -2,9 +2,7 @@ package main
 
 import (
 	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/skycoin/cx-aigym-nes/nes/ui"
@@ -94,7 +92,7 @@ func main() {
 func runUI(path, fileType string) error {
 	signalChan := make(chan os.Signal, 1)
 	done := make(chan int)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	// signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	if path == "" {
 		log.Errorf("No %s files specified or found", fileType)
@@ -102,9 +100,15 @@ func runUI(path, fileType string) error {
 
 	}
 	paths := []string{path}
-	runtime.LockOSThread()
-	ui.Run(paths, signalChan)
+
+	go func() {
+		runtime.LockOSThread()
+		ui.Run(paths, signalChan)
+		done <- 0
+	}()
+
 	code := <-done
 	os.Exit(code)
+
 	return nil
 }
